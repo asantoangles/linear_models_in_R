@@ -9,7 +9,7 @@ library(nhanesA)
 # and the plotting functionality
 library(ggplot2)
 
-setwd("~/Documents/Outreach/NeuroscienceRWorkshop/")
+setwd("~/Your/Directory/Path/") # Change this to the appropriate directory on your own computer
 
 ################################
 # An additional note about loading data
@@ -131,7 +131,7 @@ plot(my_model) # Now we are applying a plot method that works for object type lm
 # head(df_kids) # Why are there no rows?
 # table(df_kids$Age) # There seem to be zero cases?
 # Where have we made a mistake? 
-# Clue: check out line 39
+# Clue: check out line 36
 
 ## Alternatively, use indexing - more precise and flexible
 # Type these out yourself from the slide! These lines are here for reference only
@@ -141,7 +141,7 @@ plot(my_model) # Now we are applying a plot method that works for object type lm
 # df[,0]	
 # df[1:3, c("ID", "Gender", "Height_cm")]
 # df[which(df$Age>75), ]
-# Additional to the presentation: logical operators
+# Additional to the presentation: logical operators (and &, or |, not !)
 summary(df[which(df$Age>75 & df$Gender=="Female"), ])
 summary(df[which(df$Age>75 | df$Gender=="Female"), ])
 summary(df[which(df$Age>75 & df$Gender!="Female"), ])
@@ -182,7 +182,7 @@ my_model <- lm(repwt ~ weight + sex, data=measures, na.action=na.exclude)
 resid(my_model)
 hist(resid(my_model))
 plot(my_model)
-plot(measures$df, predict(my_model))
+plot(measures$repwt, predict(my_model))
 # This all looks very nice, we can trust the output to be meaningful
 # (the model is capturing the data/process/system well enough)
 
@@ -216,8 +216,46 @@ summary(lm(repwt ~ sex, data=measures, na.action=na.exclude))
 
 
 ## Your turn
-# No example code here for now! Try it yourself
-# This script will be updated after the session with an example analysis process.
+
+# Potentially interesting models:
+mod_h <- lm(weight ~ height, data = measures)
+mod_s <- lm(weight ~ sex, data = measures)
+mod_hs <- lm(weight ~ height + sex, data = measures)
+mod_int <- lm(weight ~ height * sex, data = measures)
+
+# Check assumptions for all models (just one here as an example)
+hist(resid(mod_int))
+plot(mod_int)
+plot(measures$weight, predict(mod_int))
+
+# One outlier seems to be pulling things off course (the only one with weight > c. 115 kg), let's try without it
+mod_h_nooutlier <- lm(weight ~ height, data = measures[which(measures$weight<115),])
+mod_s_nooutlier <- lm(weight ~ sex, data = measures[which(measures$weight<115),])
+mod_hs_nooutlier <- lm(weight ~ height + sex, data = measures[which(measures$weight<115),])
+mod_int_nooutlier <- lm(weight ~ height * sex, data = measures[which(measures$weight<115),])
+
+# Check assumptions again - different dataset means a different model fit
+hist(resid(mod_int_nooutlier))
+plot(mod_int_nooutlier)
+plot(measures$weight[which(measures$weight<115)], predict(mod_int_nooutlier)) # Note the same subset of raw data as what the model was fitted on (and is therefore predicting from)
+
+# Not perfect, but looks pretty good
+# We can go on to interpret this model
+summary(mod_int_nooutlier)
+# The interaction term is just about significant
+# Interpretation: the slope for height for sex M is 0.3497 steeper than the slope for height for the reference category (by default the first alphabetically, so here F), which in turn is the one given in the output as the height term
+# Not easy to get head around - and this is as easy as interactions come!
+
+# Plot it to visualise the effect and sanity check the model
+ggplot(measures[which(measures$weight<115),], aes(y= weight, x=height, group=sex, colour=sex)) +
+	geom_point() +
+	geom_line(aes(y=predict(mod_int_nooutlier))) +
+	theme_minimal() +
+	scale_colour_manual(values=c("purple", "orange"))
+
+# BUT an interaction makes the model substantially more complex
+# Is the extra complexity worth it for model fit, compared to simpler models?
+# Following the principle of parsimony ("Occam's razor") - if a simpler explanation is as good as a more complicated one, the simpler should be preferred)
 
 
 ## Model comparison
